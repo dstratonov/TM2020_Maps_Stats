@@ -1,0 +1,7 @@
+[meta]
+name        = "Map Stats"
+author      = "Just Smile"
+category    = "Testing"
+
+[script]
+dependencies = [ "VehicleState", "NadeoServices"]
