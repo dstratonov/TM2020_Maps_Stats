@@ -19,7 +19,7 @@ namespace MapDataHolder{
         string timestamp;
         string recordUrl;
         DataHolder(Json::Value@ mapInfo, Json::Value@ recordInfo){
-            mapId = recordInfo.Get("mapId");
+            mapId = mapInfo.Get("mapId");
             mapUid = mapInfo.Get("mapUid");
             mapName = mapInfo.Get("name");
             authorScore = mapInfo.Get("authorScore");

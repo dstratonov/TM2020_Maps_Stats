@@ -4,143 +4,197 @@
 void Update(float dt){
 }
 
-void Render(){
-     RenderMapsStatsTable(all_maps);
+[Setting hidden]
+bool S_WindowOpen = true;
+
+void RenderMenu() {
+    if (UI::MenuItem("Maps Stats", "", S_WindowOpen))
+        S_WindowOpen = !S_WindowOpen;
 }
+
+void Render(){
+    if (!S_WindowOpen) return;
+    if (UI::Begin("Maps Stats", S_WindowOpen, UI::WindowFlags::AlwaysAutoResize)) {
+        if (hideAuthorMedalMaps) RenderMapsStatsTable(all_maps_without_author_medal);
+        else RenderMapsStatsTable(all_maps_for_search);
+    }
+    UI::End();
+}
+
+int currentPage = 0;
+const int mapsPerPage = 23;
+bool hideAuthorMedalMaps = false;
+string searchInput = "";
+bool searchMaps = false;
 
 void RenderMapsStatsTable(array<MapDataHolder::DataHolder@> maps_info) 
 {
-    // Assumption: mapNames.size() == authorMedals.size()
     int totalMaps = maps_info.get_Length();
+    int totalPages = (totalMaps + mapsPerPage - 1) / mapsPerPage; // Calculate the total number of pages.
 
     // Table Begin
-    if (UI::BeginTable("Maps stats", 11, UI::TableFlags::Borders | UI::TableFlags::Resizable)) 
+    if (UI::BeginTable("Maps stats", 6, UI::TableFlags::SizingFixedFit)) 
     {
-        UI::TableSetupColumn("Map name");
-        UI::TableSetupColumn("Map author");
-        UI::TableSetupColumn("Map Author Score");
-        UI::TableSetupColumn("MapId");
-        UI::TableSetupColumn("MapUid");
-
-        UI::TableSetupColumn("Map Id From Record");
-        UI::TableSetupColumn("Map Record Id");
-        UI::TableSetupColumn("Medal");
-        UI::TableSetupColumn("Record Time");
-        UI::TableSetupColumn("Time Stamp");
-
-        //UI::TableSetupColumn("Show Medal Maps");
-        UI::TableSetupColumn("Resync");
         // Header
         UI::TableNextRow();
         
-        // 1. Count of maps with author medal/all maps count
+        // 1. Stats - maps with author medal / total maps
         UI::TableNextColumn();
-        UI::Text("Mapname");
+        UI::Text("Map stats: " + CountAuthorMedals(maps_info) + " / " + totalMaps);
 
         UI::TableNextColumn();
-        UI::Text("MapAuthor");
+        UI::SetNextItemWidth(searchInput.get_Length() * 6.1 + 40.0);
+        searchInput = UI::InputText("Filter", searchInput);
 
         UI::TableNextColumn();
-        UI::Text("MapAuthorScore");
+        if (UI::Button("Search")) 
+        {
+            if (!searchMaps){
+                searchMaps = true;
+            }
+        }
 
         UI::TableNextColumn();
-        UI::Text("MapId");
+        if (UI::Button("Resync")) 
+        {
+            if (!isResync){
+                isResync = true;
+            }
+        }
 
         UI::TableNextColumn();
-        UI::Text("MapUid");
+        if (UI::Button(hideAuthorMedalMaps ? "Show Author Medal Maps" : "Hide Author Medal Maps")) 
+        {
+            hideAuthorMedalMaps = !hideAuthorMedalMaps;
+        }
+
+        UI::TableNextRow();
+
+        // 2. Column Headers
+        UI::TableNextColumn();
+        UI::Text("Map name");
 
         UI::TableNextColumn();
-        UI::Text("MapIdFromRecord");
-
-        UI::TableNextColumn();
-        UI::Text("MapRecordId");
+        UI::Text("Distance");
 
         UI::TableNextColumn();
         UI::Text("Medal");
 
         UI::TableNextColumn();
-        UI::Text("RecordTime");
+        UI::Text("Score");
 
         UI::TableNextColumn();
-        UI::Text("TimeStamp");
-        
-        
-        // 2. Button to hide or show maps with author medal
-        //UI::TableNextColumn();
-        //if (UI::Button(showMedalMaps ? "Hide Medal Maps" : "Show Medal Maps")) 
-        //{
-        //    showMedalMaps = !showMedalMaps;
-        //}
+        UI::Text("Timestamp");
 
-        // 3. Resync button
-        UI::TableNextColumn();
-        if (UI::Button("Resync")) 
+        // Data Rows
+        int startIdx = currentPage * mapsPerPage;
+        int endIdx = startIdx + mapsPerPage;
+        if (endIdx > totalMaps) 
         {
-            if (!isResync) isResync = true;
+            endIdx = totalMaps;
         }
 
-        // Content Rows
-        for (int i = 0; i < maps_info.get_Length(); i++) 
+        for (int i = startIdx; i < endIdx; i++) 
         {
-            // Check if we should show this map
-            //if (!showMedalMaps && authorMedals[i]) 
-            //{
-            //    continue;
-            //}
-
             UI::TableNextRow();
 
             // 1. Map name
             UI::TableNextColumn();
             UI::Text(ColoredString(maps_info[i].mapName));
 
+            // 2. Author time difference (Assuming a dummy value for now)
             UI::TableNextColumn();
-            UI::Text(maps_info[i].author);
+            UI::Text("" + (maps_info[i].recordTime - maps_info[i].authorScore) / 1000.0); 
 
+            // 3. Author medal get
             UI::TableNextColumn();
-            UI::Text("" + maps_info[i].authorScore);
+            UI::Text(maps_info[i].medal >= 4 ? ColoredString("$0f0Author Medal")  : ColoredString("$f00Lower medal"));
 
+            // 4. Record score
             UI::TableNextColumn();
-            UI::Text(maps_info[i].mapId);
+            UI::Text("" + maps_info[i].recordTime / 1000.0);
 
-            UI::TableNextColumn();
-            UI::Text(maps_info[i].mapUid);
-
-            UI::TableNextColumn();
-            UI::Text(maps_info[i].mapIdFromRecord);
-
-            UI::TableNextColumn();
-            UI::Text(maps_info[i].mapRecordId);
-
-            UI::TableNextColumn();
-            UI::Text("" + maps_info[i].medal);
-
-            UI::TableNextColumn();
-            UI::Text("" + maps_info[i].recordTime);
-
+            // 5. Timestamp
             UI::TableNextColumn();
             UI::Text(maps_info[i].timestamp);
 
-            // 2. Green or red circle
-            //UI::TableNextColumn();
-            //string color = authorMedals[i] ? "Author" : "None"; 
-            //UI::Text(color);
-
-            // 3. Play button
+            // 6. Play button
             UI::TableNextColumn();
-            if (UI::Button("Play".opAdd(i))) 
+            if (UI::Button("Play" + "##" + maps_info[i].mapId)) 
             {
-                if (!GoLoadMap){
+                if (!GoLoadMap)
+                {
                     GoLoadMap = true;
                     mapUrl = maps_info[i].fileUrl;
-                    
                 }
             }
         }
 
         UI::EndTable();
     }
+
+    // Pagination Controls
+    if (UI::Button("Left") && currentPage > 0) 
+    {
+        currentPage--;
+    }
+    
+    UI::SameLine();
+
+    if (UI::Button("Right") && currentPage < totalPages - 1) 
+    {
+        currentPage++;
+    }
+
+    UI::SameLine();
+
+    UI::Text("Pages: " + (currentPage + 1) + " / " + totalPages); 
 }
+
+array<MapDataHolder::DataHolder@> GetFilteredMaps(array<MapDataHolder::DataHolder@> maps_info, const string searchTerm) 
+{
+    array<MapDataHolder::DataHolder@> result;
+
+    for (uint i = 0; i < maps_info.get_Length(); i++) 
+    {
+        if (Regex::Contains(maps_info[i].mapName, searchTerm, Regex::Flags::ECMAScript)) 
+        {
+            result.InsertLast(maps_info[i]);
+        }
+    }
+
+    return result;
+}
+
+array<MapDataHolder::DataHolder@> GetMapsWithoutAuthorMedal(array<MapDataHolder::DataHolder@> maps_info) 
+{
+    array<MapDataHolder::DataHolder@> result;
+
+    for (uint i = 0; i < maps_info.get_Length(); i++) 
+    {
+        if (maps_info[i].medal < 4) 
+        {
+            result.InsertLast(maps_info[i]);
+        }
+    }
+
+    return result;
+}
+
+int CountAuthorMedals(array<MapDataHolder::DataHolder@> maps_info) 
+{
+    int count = 0;
+    for (int i = 0; i < maps_info.get_Length(); ++i) 
+    {
+        if (maps_info[i].medal == 4) 
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+
 
 void NotifyError(const string &in msg) {
     warn(msg);
@@ -167,46 +221,49 @@ void AddAudiences(){
     NadeoServices::AddAudience("NadeoServices");
 }
 array<MapDataHolder::DataHolder@> all_maps;
+array<MapDataHolder::DataHolder@> all_maps_without_author_medal;
+array<MapDataHolder::DataHolder@> all_maps_for_search;
 bool showMedalMaps = true;
-bool isResync = false;
+bool isResync = true;
 void Resync(){
     Json::Value@ allRecords = Helpers::GetAllAccountRecords();
     int mapCount = allRecords.get_Length();
-    int maximumCount = 200;
-    mapCount = maximumCount < mapCount ? maximumCount : mapCount;
+    //int maximumCount = 200;
+    //mapCount = maximumCount < mapCount ? maximumCount : mapCount;
     all_maps = {};
     Batch::Batch batches();
     for (int i = 0; i < mapCount; i++){
         Json::Value@ personalRecord = allRecords.opIndex(i);
         batches.AddMapId(personalRecord.Get("mapId"));
     }
+    dictionary dict = {};
+    array<Json::Value> all_map_infos;
     int globalID = 0;
     for (int i = 0; i < batches.batchHolders.get_Length(); i++){
         Json::Value@ mapInfoPerBatch = Helpers::GetMapInfoByArrayOfID(batches.batchHolders[i]);
         for (int j = 0; j < batches.batchHolders[i].get_Length(); j++){
+                dict.Set(mapInfoPerBatch.opIndex(j).Get("mapId"),globalID);
+                all_map_infos.InsertLast(mapInfoPerBatch.opIndex(j));
+                globalID++;
+        }
+
+    }
+    globalID = 0;
+    for (int i = 0; i < batches.batchHolders.get_Length(); i++){
+        Json::Value@ mapInfoPerBatch = Helpers::GetMapInfoByArrayOfID(batches.batchHolders[i]);
+        for (int j = 0; j < batches.batchHolders[i].get_Length(); j++){
             Json::Value@ personalRecord = allRecords.opIndex(globalID);
-            Json::Value@ mapInfo = mapInfoPerBatch.opIndex(j);
+            string mapId = personalRecord.Get("mapId");
+            int idForMap;
+            dict.Get(mapId, idForMap);
+            Json::Value@ mapInfo = all_map_infos[idForMap];
             MapDataHolder::DataHolder mapData(mapInfo, personalRecord);
             all_maps.InsertLast(mapData);
-            print("");
-            print("Map Name = " + ColoredString(all_maps[globalID].mapName));
-            print("Author = " + all_maps[globalID].author);
-            print("Author Score = " + all_maps[globalID].authorScore);
-            print("Map Id = " + all_maps[globalID].mapId);
-            print("Map Uid = " + all_maps[globalID].mapUid);
-            print("File Url = " + all_maps[globalID].fileUrl);
-            print("Map Id From Record = " + all_maps[globalID].mapIdFromRecord);
-            print("Map Record Id = " + all_maps[globalID].mapRecordId);
-            print("Medal = " + all_maps[globalID].medal);
-            print("Record Score = " + all_maps[globalID].recordScore);
-            print("Record Time = " + all_maps[globalID].recordTime);
-            print("Scope Type = " + all_maps[globalID].scopeType);
-            print("Time Stamp = " + all_maps[globalID].timestamp);
-            print("Record Url = " + all_maps[globalID].recordUrl); 
-            print("");
             globalID = globalID + 1;
         }
     }
+    all_maps_for_search = GetFilteredMaps(all_maps, searchInput);
+    all_maps_without_author_medal = GetMapsWithoutAuthorMedal(all_maps_for_search);
 
     print(all_maps.get_Length());
 }
@@ -215,19 +272,22 @@ bool GoLoadMap = false;
 string mapUrl = "";
 bool audiencesAdded = false;
 void Main() {
+    Resync();
+    isResync = false;
     startnew(MainCoro);
 }
 
 void MainCoro() {
     while (true) {
         yield();
-        if (!audiencesAdded){
-            AddAudiences();
-            audiencesAdded = true;
-        }
         if (isResync){
             Resync();
             isResync = false;
+        }
+        if (searchMaps){
+            all_maps_for_search = GetFilteredMaps(all_maps, searchInput);
+            all_maps_without_author_medal = GetMapsWithoutAuthorMedal(all_maps_for_search);
+            searchMaps = false;
         }
         if (GoLoadMap){
            // GetApp().ManiaTitleControlScriptAPI.PlayMap(mapUrl, "TrackMania/TM_PlayMap_Local", "");

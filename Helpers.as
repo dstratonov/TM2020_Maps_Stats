@@ -25,6 +25,7 @@ namespace Helpers{
     }
 
     Json::Value@ GetAllAccountRecords(){
+        NadeoServices::AddAudience("NadeoServices");
         string accountID = GetApp().LocalPlayerInfo.WebServicesUserId;
         string requestLink = "https://prod.trackmania.core.nadeo.online/mapRecords/?accountIdList=" + accountID + "&addPersonalBest=true";
         Net::HttpRequest@ request = NadeoServices::Get("NadeoServices", requestLink);
