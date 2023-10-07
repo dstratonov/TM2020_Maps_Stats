@@ -8,13 +8,13 @@ void Update(float dt){
 bool S_WindowOpen = true;
 
 void RenderMenu() {
-    if (UI::MenuItem("Maps Stats", "", S_WindowOpen))
+    if (UI::MenuItem("Map Manager Plugin", "", S_WindowOpen))
         S_WindowOpen = !S_WindowOpen;
 }
 
 void Render(){
     if (!S_WindowOpen) return;
-    if (UI::Begin("Maps Stats", S_WindowOpen, UI::WindowFlags::AlwaysAutoResize)) {
+    if (UI::Begin("Map Manager Plugin", S_WindowOpen, UI::WindowFlags::AlwaysAutoResize)) {
         if (hideAuthorMedalMaps) RenderMapsStatsTable(all_maps_without_author_medal);
         else RenderMapsStatsTable(all_maps_for_search);
     }
