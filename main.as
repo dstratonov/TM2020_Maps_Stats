@@ -8,7 +8,7 @@ void Update(float dt){
 bool S_WindowOpen = true;
 
 void RenderMenu() {
-    if (UI::MenuItem("Map Manager Plugin", "", S_WindowOpen))
+    if (UI::MenuItem("Map Manager", "", S_WindowOpen))
         S_WindowOpen = !S_WindowOpen;
 }
 

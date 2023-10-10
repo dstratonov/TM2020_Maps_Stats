@@ -2,6 +2,7 @@
 name        = "Map Manager"
 author      = "Just Smile"
 category    = "Manager"
+version     = "1.1"
 
 [script]
 dependencies = ["NadeoServices"]
