@@ -1,8 +1,7 @@
 [meta]
-name        = "Map Manager Plugin"
+name        = "Map Manager"
 author      = "Just Smile"
 category    = "Manager"
-version     = 1.0
 
 [script]
 dependencies = ["NadeoServices"]
