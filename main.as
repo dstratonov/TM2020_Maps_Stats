@@ -88,6 +88,16 @@ void RenderMapsStatsTable(array<MapDataHolder::DataHolder@> maps_info)
         UI::TableNextColumn();
 
         UI::TableNextColumn();
+        if (UI::Button("Play Random Map")) 
+        {
+            if (!GoLoadMap)
+                {
+                    GoLoadMap = true;
+                    auto mapRandId = Math::Rand(0, totalMaps - 1);
+                    mapUrl = maps_info[mapRandId].fileUrl;
+                }
+        }
+
         UI::TableNextColumn();
         if (UI::Button(hideAuthorMedalMaps ? "Show Author Medal Maps" : "Hide Author Medal Maps")) 
         {
